@@ -13,7 +13,8 @@ SELECT
         ) AS REAL
     ) AS estimated_route_fare_clean
 FROM freenow_bookings;
-
+-- fixing the column "estimated_route_fare" to be abe to convert it into integer,
+-- since there are entries with very high values
 
 SELECT 
     estimated_route_fare,
@@ -30,8 +31,19 @@ SELECT *
 FROM freenow_bookings_fixed
 WHERE estimated_route_fare_clean <= 500
   AND estimated_route_fare_clean IS NOT NULL;
+-- excluding entries with values above 500 since the highest reasonable value is 471.98 
   
   SELECT
     MAX(CAST(estimated_route_fare AS REAL)) AS max_fare,
     AVG(CAST(estimated_route_fare AS REAL)) AS avg_fare
 FROM freenow_bookings_filtered;
+
+CREATE TABLE bookings_final AS
+SELECT
+    TRIM(id) AS booking_id,
+    DATETIME(request_date) AS request_datetime,
+    UPPER(TRIM(status)) AS booking_status,
+    TRIM(id_driver) AS driver_id,
+    estimated_route_fare_clean AS estimated_fare_eur
+FROM freenow_bookings_filtered
+-- creating a final table ready for analysis
