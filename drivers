@@ -1,0 +1,40 @@
+
+CREATE TABLE drivers_final AS
+SELECT
+    -- Keep ID as TEXT
+    TRIM(id) AS driver_id,
+
+    -- Standardize country (uppercase + normalize common cases)
+    CASE 
+        WHEN UPPER(TRIM(country)) IN ('FR', 'FRANCE') THEN 'FRANCE'
+        WHEN UPPER(TRIM(country)) IN ('AT', 'AUSTRIA', 'ÖSTERREICH') THEN 'AUSTRIA'
+        ELSE UPPER(TRIM(country))
+    END AS country,
+
+    -- Clean rating (remove hidden characters and cast)
+    CAST(
+        ROUND(TRIM(REPLACE(REPLACE(rating, '﻿', ''), ' ', '')), 2)
+        AS REAL
+    ) AS rating,
+
+    -- Convert rating_count to integer
+    CAST(rating_count AS INTEGER) AS rating_count,
+
+    -- Handle mixed date formats
+    CASE 
+        -- If it's a Unix timestamp (only digits)
+        WHEN date_registration GLOB '[0-9]*' AND LENGTH(date_registration) <= 10
+        THEN DATETIME(CAST(date_registration AS INTEGER), 'unixepoch')
+
+        -- Otherwise assume it's already a datetime string
+        ELSE DATETIME(date_registration)
+    END AS registration_date,
+
+    -- Convert boolean text to integer
+    CASE 
+        WHEN LOWER(TRIM(receive_marketing)) IN ('true', '1') THEN 1
+        WHEN LOWER(TRIM(receive_marketing)) IN ('false', '0') THEN 0
+        ELSE NULL
+    END AS receive_marketing
+
+FROM freenow_drivers;
