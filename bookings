@@ -1,0 +1,37 @@
+DROP TABLE IF EXISTS freenow_bookings_fixed;
+
+CREATE TABLE freenow_bookings_fixed AS
+SELECT
+    *,
+    CAST(
+        TRIM(
+            REPLACE(
+                REPLACE(
+                    REPLACE(estimated_route_fare, '€', ''),
+                ',', ''),
+            ' ', '')
+        ) AS REAL
+    ) AS estimated_route_fare_clean
+FROM freenow_bookings;
+
+
+SELECT 
+    estimated_route_fare,
+    estimated_route_fare_clean
+FROM freenow_bookings_fixed
+ORDER BY estimated_route_fare_clean DESC
+LIMIT 20;
+
+DROP TABLE IF EXISTS freenow_bookings_filtered;
+
+
+CREATE TABLE freenow_bookings_filtered AS
+SELECT *
+FROM freenow_bookings_fixed
+WHERE estimated_route_fare_clean <= 500
+  AND estimated_route_fare_clean IS NOT NULL;
+  
+  SELECT
+    MAX(CAST(estimated_route_fare AS REAL)) AS max_fare,
+    AVG(CAST(estimated_route_fare AS REAL)) AS avg_fare
+FROM freenow_bookings_filtered;
