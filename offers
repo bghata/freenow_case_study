@@ -1,0 +1,62 @@
+
+CREATE TABLE freenow_offers_clean AS
+SELECT
+    TRIM(id) AS id,
+
+    -- Convert ISO timestamp to SQLite datetime
+    DATETIME(REPLACE(REPLACE(datecreated, 'T', ' '), 'Z', '')) AS date_created,
+
+    TRIM(bookingid) AS booking_id,
+    TRIM(driverid) AS driver_id,
+
+    -- Convert distance to integer
+    CAST(routedistance AS INTEGER) AS route_distance,
+
+    -- Standardize state
+    UPPER(TRIM(state)) AS state,
+
+    -- Convert boolean text to 0/1
+    CASE
+        WHEN LOWER(driverread) IN ('true', '1') THEN 1
+        WHEN LOWER(driverread) IN ('false', '0') THEN 0
+        ELSE NULL
+    END AS driver_read
+
+FROM freenow_offers;
+
+-- checking for duplicates
+SELECT 
+    id,
+    date_created,
+    booking_id,
+    driver_id,
+    route_distance,
+    state,
+    driver_read,
+    COUNT(*) AS duplicate_count
+FROM freenow_offers_clean
+GROUP BY 
+    id,
+    date_created,
+    booking_id,
+    driver_id,
+    route_distance,
+    state,
+    driver_read
+HAVING COUNT(*) > 1;
+
+-- checking outliers
+SELECT 
+    MIN(route_distance) AS min_distance,
+    MAX(route_distance) AS max_distance,
+    AVG(route_distance) AS avg_distance
+FROM freenow_offers_clean;
+
+-- creating a final table exluding negative route distances
+CREATE TABLE offers_final AS
+SELECT *
+FROM freenow_offers_clean
+WHERE route_distance IS NOT NULL
+  AND route_distance >= 0;
+  
+ 
