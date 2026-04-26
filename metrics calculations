@@ -1,0 +1,48 @@
+-- here is where the magic happens
+
+SELECT
+    country,
+    COUNT(DISTINCT driver_id) AS total_drivers,
+    SUM(total_offers) AS total_offers,
+    SUM(accepted_offers) AS accepted_offers,
+    SUM(offers_not_read) AS offers_not_read,
+    SUM(total_bookings) AS total_bookings,
+    SUM(success_bookings) AS success_bookings,
+    SUM(driver_abort) AS driver_abort,
+    SUM(passenger_abort) AS passenger_abort,
+    SUM(server_abort) AS server_abort,
+    SUM(no_driver_found) AS no_driver_found,
+    SUM(total_revenue) AS total_revenue,
+
+    -- main metrics
+    ROUND(100.0 * SUM(accepted_offers) / SUM(total_offers), 2) AS acceptance_rate_pct,
+    ROUND(100.0 * SUM(offers_read) / SUM(total_offers), 2) AS offer_read_rate_pct,
+    ROUND(100.0 * SUM(offers_not_read) / SUM(total_offers), 2) AS ignored_rate_pct,
+    ROUND(100.0 * SUM(total_bookings) / SUM(total_offers), 2) AS conversion_rate_pct,
+    ROUND(100.0 * SUM(success_bookings) / SUM(total_bookings), 2) AS completion_rate_pct,
+
+    -- abort rates metrics
+    ROUND(100.0 * SUM(driver_abort) / SUM(total_bookings), 2) AS driver_abort_rate_pct,
+    ROUND(100.0 * SUM(passenger_abort) / SUM(total_bookings), 2) AS passenger_abort_rate_pct,
+    ROUND(100.0 * SUM(server_abort) / SUM(total_bookings), 2) AS server_abort_rate_pct,
+    ROUND(100.0 * SUM(no_driver_found) / SUM(total_bookings), 2) AS no_driver_found_rate_pct,
+
+    -- failure rate metrics
+    ROUND(
+        100.0 * (
+            SUM(driver_abort) + 
+            SUM(passenger_abort) + 
+            SUM(server_abort) + 
+            SUM(no_driver_found)
+        ) / SUM(total_bookings), 
+    2) AS failure_rate_pct,
+
+    -- revenue metric
+    ROUND(1.0 * SUM(total_revenue) / SUM(success_bookings), 2) AS revenue_per_booking
+
+FROM driver_daily_activity
+GROUP BY country
+ORDER BY total_revenue DESC;
+
+
+
