@@ -1,0 +1,92 @@
+-- drivers daily activities table, merging the tables (bookings_final, offers_final, drivers_final)
+
+-- DROP TABLE IF EXISTS driver_daily_activity;
+
+CREATE TABLE driver_daily_activity AS
+WITH RECURSIVE date_range AS (
+    SELECT DATE('2021-06-01') AS activity_date
+    UNION ALL
+    SELECT DATE(activity_date, '+1 day')
+    FROM date_range
+    WHERE activity_date < DATE('2021-06-14')
+),
+
+driver_days AS (
+    SELECT 
+        d.driver_id,
+        d.country,
+        dr.activity_date
+    FROM drivers_final d
+    CROSS JOIN date_range dr
+),
+
+offers_agg AS (
+    SELECT
+        driver_id,
+        DATE(date_created) AS activity_date,
+
+        COUNT(*) AS total_offers,
+
+        SUM(CASE WHEN UPPER(TRIM(state)) = 'ACCEPTED' THEN 1 ELSE 0 END) AS accepted_offers,
+        SUM(CASE WHEN UPPER(TRIM(state)) = 'CANCELLED' THEN 1 ELSE 0 END) AS cancelled_offers,
+
+        SUM(CASE WHEN driver_read = 1 THEN 1 ELSE 0 END) AS offers_read,
+        SUM(CASE WHEN driver_read = 0 THEN 1 ELSE 0 END) AS offers_not_read
+
+    FROM offers_final
+    GROUP BY driver_id, DATE(date_created)
+),
+
+bookings_agg AS (
+    SELECT
+        driver_id,
+        DATE(request_datetime) AS activity_date,
+
+        COUNT(*) AS total_bookings,
+
+        SUM(CASE WHEN UPPER(TRIM(booking_status)) = 'SUCCESS' THEN 1 ELSE 0 END) AS success_bookings,
+        SUM(CASE WHEN UPPER(TRIM(booking_status)) = 'DRIVER_ABORT' THEN 1 ELSE 0 END) AS driver_abort,
+        SUM(CASE WHEN UPPER(TRIM(booking_status)) = 'PASSENGER_ABORT' THEN 1 ELSE 0 END) AS passenger_abort,
+        SUM(CASE WHEN UPPER(TRIM(booking_status)) = 'NO_DRIVER_FOUND' THEN 1 ELSE 0 END) AS no_driver_found,
+        SUM(CASE WHEN UPPER(TRIM(booking_status)) = 'SERVER_ABORT' THEN 1 ELSE 0 END) AS server_abort,
+
+        SUM(CASE 
+            WHEN UPPER(TRIM(booking_status)) = 'SUCCESS' 
+            THEN estimated_fare_eur 
+            ELSE 0 
+        END) AS total_revenue
+
+    FROM bookings_final
+    GROUP BY driver_id, DATE(request_datetime)
+)
+
+SELECT
+    dd.driver_id,
+    dd.country,
+    dd.activity_date,
+
+    -- offers
+    COALESCE(o.total_offers, 0) AS total_offers,
+    COALESCE(o.accepted_offers, 0) AS accepted_offers,
+    COALESCE(o.cancelled_offers, 0) AS cancelled_offers,
+    COALESCE(o.offers_read, 0) AS offers_read,
+    COALESCE(o.offers_not_read, 0) AS offers_not_read,
+
+    -- bookings
+    COALESCE(b.total_bookings, 0) AS total_bookings,
+    COALESCE(b.success_bookings, 0) AS success_bookings,
+    COALESCE(b.driver_abort, 0) AS driver_abort,
+    COALESCE(b.passenger_abort, 0) AS passenger_abort,
+    COALESCE(b.no_driver_found, 0) AS no_driver_found,
+    COALESCE(b.server_abort, 0) AS server_abort,
+    COALESCE(b.total_revenue, 0) AS total_revenue
+
+FROM driver_days dd
+LEFT JOIN offers_agg o
+    ON dd.driver_id = o.driver_id
+    AND dd.activity_date = o.activity_date
+LEFT JOIN bookings_agg b
+    ON dd.driver_id = b.driver_id
+    AND dd.activity_date = b.activity_date
+
+ORDER BY dd.driver_id, dd.activity_date;
