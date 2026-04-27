@@ -2,6 +2,7 @@
 
 -- DROP TABLE IF EXISTS driver_daily_activity;
 
+-- creating a unified date table
 CREATE TABLE driver_daily_activity AS
 WITH RECURSIVE date_range AS (
     SELECT DATE('2021-06-01') AS activity_date
@@ -20,42 +21,36 @@ driver_days AS (
     CROSS JOIN date_range dr
 ),
 
+-- converting the values in "state" column from text into 1 & 0 for easier analysis
 offers_agg AS (
     SELECT
         driver_id,
         DATE(date_created) AS activity_date,
-
         COUNT(*) AS total_offers,
-
         SUM(CASE WHEN UPPER(TRIM(state)) = 'ACCEPTED' THEN 1 ELSE 0 END) AS accepted_offers,
         SUM(CASE WHEN UPPER(TRIM(state)) = 'CANCELLED' THEN 1 ELSE 0 END) AS cancelled_offers,
-
         SUM(CASE WHEN driver_read = 1 THEN 1 ELSE 0 END) AS offers_read,
         SUM(CASE WHEN driver_read = 0 THEN 1 ELSE 0 END) AS offers_not_read
-
     FROM offers_final
     GROUP BY driver_id, DATE(date_created)
 ),
 
+-- converting the values in "booking_state" column for each type of reasoning from text into 1 & 0 for easier analysis
 bookings_agg AS (
     SELECT
         driver_id,
         DATE(request_datetime) AS activity_date,
-
         COUNT(*) AS total_bookings,
-
         SUM(CASE WHEN UPPER(TRIM(booking_status)) = 'SUCCESS' THEN 1 ELSE 0 END) AS success_bookings,
         SUM(CASE WHEN UPPER(TRIM(booking_status)) = 'DRIVER_ABORT' THEN 1 ELSE 0 END) AS driver_abort,
         SUM(CASE WHEN UPPER(TRIM(booking_status)) = 'PASSENGER_ABORT' THEN 1 ELSE 0 END) AS passenger_abort,
         SUM(CASE WHEN UPPER(TRIM(booking_status)) = 'NO_DRIVER_FOUND' THEN 1 ELSE 0 END) AS no_driver_found,
         SUM(CASE WHEN UPPER(TRIM(booking_status)) = 'SERVER_ABORT' THEN 1 ELSE 0 END) AS server_abort,
-
         SUM(CASE 
             WHEN UPPER(TRIM(booking_status)) = 'SUCCESS' 
             THEN estimated_fare_eur 
             ELSE 0 
         END) AS total_revenue
-
     FROM bookings_final
     GROUP BY driver_id, DATE(request_datetime)
 )
@@ -65,6 +60,7 @@ SELECT
     dd.country,
     dd.activity_date,
 
+-- converting null values into 0
     -- offers
     COALESCE(o.total_offers, 0) AS total_offers,
     COALESCE(o.accepted_offers, 0) AS accepted_offers,
@@ -72,6 +68,7 @@ SELECT
     COALESCE(o.offers_read, 0) AS offers_read,
     COALESCE(o.offers_not_read, 0) AS offers_not_read,
 
+-- converting null values into 0
     -- bookings
     COALESCE(b.total_bookings, 0) AS total_bookings,
     COALESCE(b.success_bookings, 0) AS success_bookings,
