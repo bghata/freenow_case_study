@@ -26,7 +26,7 @@ The origianl tables provided are:
 **Bookings**
 
 * Converted fare to numeric (`estimated_fare_eur`)
-* Removed invalid or extreme values "for example some cells havd enormous fare values"
+* Removed invalid or extreme values "for example some cells had enormous fare values"
 * Standardized datetime
 * Kept all booking statuses
 
