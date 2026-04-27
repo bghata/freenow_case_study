@@ -1,0 +1,9 @@
+-- creating a table with values above 500
+
+DROP TABLE IF EXISTS freenow_bookings_above_500;
+
+CREATE TABLE freenow_bookings_above_500 AS
+SELECT *
+FROM freenow_bookings_fixed
+WHERE estimated_route_fare_clean > 500
+  AND estimated_route_fare_clean IS NOT NULL;
