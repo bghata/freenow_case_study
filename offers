@@ -3,19 +3,19 @@ CREATE TABLE freenow_offers_clean AS
 SELECT
     TRIM(id) AS id,
 
-    -- Convert ISO timestamp to SQLite datetime
+    -- convert timestamp into datetime
     DATETIME(REPLACE(REPLACE(datecreated, 'T', ' '), 'Z', '')) AS date_created,
 
     TRIM(bookingid) AS booking_id,
     TRIM(driverid) AS driver_id,
 
-    -- Convert distance to integer
+    -- converting distance into integer
     CAST(routedistance AS INTEGER) AS route_distance,
 
-    -- Standardize state
+    -- standardizing state
     UPPER(TRIM(state)) AS state,
 
-    -- Convert boolean text to 0/1
+    -- converting boolean text into 0/1
     CASE
         WHEN LOWER(driverread) IN ('true', '1') THEN 1
         WHEN LOWER(driverread) IN ('false', '0') THEN 0
@@ -45,7 +45,7 @@ GROUP BY
     driver_read
 HAVING COUNT(*) > 1;
 
--- checking outliers
+-- checking for outliers
 SELECT 
     MIN(route_distance) AS min_distance,
     MAX(route_distance) AS max_distance,
