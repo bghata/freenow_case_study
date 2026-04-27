@@ -1,6 +1,8 @@
 DROP TABLE IF EXISTS freenow_bookings_fixed;
 
 CREATE TABLE freenow_bookings_fixed AS
+-- fixing the column "estimated_route_fare" to be abe to convert it into integer,
+-- since there are entries with very high and unrealistic values
 SELECT
     *,
     CAST(
@@ -13,8 +15,7 @@ SELECT
         ) AS REAL
     ) AS estimated_route_fare_clean
 FROM freenow_bookings;
--- fixing the column "estimated_route_fare" to be abe to convert it into integer,
--- since there are entries with very high values
+
 
 SELECT 
     estimated_route_fare,
@@ -27,11 +28,12 @@ DROP TABLE IF EXISTS freenow_bookings_filtered;
 
 
 CREATE TABLE freenow_bookings_filtered AS
+-- excluding entries with values above 500 since the highest reasonable value is 471.98
 SELECT *
 FROM freenow_bookings_fixed
 WHERE estimated_route_fare_clean <= 500
   AND estimated_route_fare_clean IS NOT NULL;
--- excluding entries with values above 500 since the highest reasonable value is 471.98 
+ 
   
   SELECT
     MAX(CAST(estimated_route_fare AS REAL)) AS max_fare,
@@ -39,6 +41,7 @@ WHERE estimated_route_fare_clean <= 500
 FROM freenow_bookings_filtered;
 
 CREATE TABLE bookings_final AS
+-- creating a final table from bookigs and ready for analysis
 SELECT
     TRIM(id) AS booking_id,
     DATETIME(request_date) AS request_datetime,
@@ -46,4 +49,3 @@ SELECT
     TRIM(id_driver) AS driver_id,
     estimated_route_fare_clean AS estimated_fare_eur
 FROM freenow_bookings_filtered
--- creating a final table ready for analysis
