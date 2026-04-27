@@ -94,7 +94,7 @@ From this table, the following calculations were made:
 
 ## What this enables
 
-* Funnel analysis (offers → bookings → completed trips)
+* Funnel analysis (offers to bookings to completed trips)
 * Driver performance analysis
 * Country-level comparisons
 * Identifying inefficiencies in the marketplace
